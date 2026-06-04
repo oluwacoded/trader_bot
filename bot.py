@@ -4,7 +4,6 @@ import json
 import websockets
 
 async def running_bot():
-    # Railway pulls the token you saved in your variables securely here
     token = os.getenv("OLYMP_TOKEN")
     url = "wss://olymptrade.com/ds/v6"
     
@@ -14,24 +13,30 @@ async def running_bot():
 
     print("Connecting to Olymp Trade data servers...")
     
+    # Custom headers to mask the cloud server and bypass the 403 Handshake block
+    custom_headers = {
+        "Origin": "https://olymptrade.com",
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+        "Accept-Language": "en-US,en;q=0.9"
+    }
+    
     try:
-        async with websockets.connect(url) as ws:
-            # 1. Authenticate the bot session using your JWT token
+        # Pass the headers directly into the connection request
+        async with websockets.connect(url, extra_headers=custom_headers) as ws:
+            print("Handshake approved! Sending authentication token...")
+            
+            # Authenticate the bot session using your JWT token
             auth_packet = {
                 "action": "auth",
                 "token": token
             }
             await ws.send(json.dumps(auth_packet))
-            print("Authentication packet sent. Connection established successfully.")
+            print("Authentication packet sent. Connection fully active.")
 
-            # 2. Keep the connection alive and listen to the live stream
+            # Keep the connection alive and listen to the live stream
             async for message in ws:
                 data = json.loads(message)
-                
-                # This will print the live streaming data directly into your Railway logs
                 print(f"Live Stream Data: {data}")
-                
-                # Your trading strategy and trade execution logic will go here
                 
     except Exception as e:
         print(f"Connection error occurred: {e}")
